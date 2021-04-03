@@ -3,7 +3,6 @@ import './App.module.css';
 import {useSelector, useDispatch} from "react-redux";
 import {selectUser, login, logout} from "./features/userSlice"
 import {auth} from "./firebase"
-import firebase from "firebase";
 import Feed from "./components/Feed";
 import Auth from "./components/Auth";
 
@@ -32,13 +31,13 @@ const App:React.FC = () => {
     }, [dispatch]);
 
 
-    return <>
+    return (<>
         {user.uid ? (<div className="app">
             <Feed />
         </div>): <Auth/>}
     </>
 
-    ;
+    );
 }
 
 export default App;
