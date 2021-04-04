@@ -41,7 +41,7 @@
     border-radius: 20px !important;
     width: 80px;
     height: 40px !important;
-    margin-left: 80% !important;
+    margin-left: 70% !important;
 }
 .tweet_sendDisableBtn {
     background-color: gray !important;
@@ -52,6 +52,6 @@
     border-radius: 30px !important;
     width: 80px;
     height: 40px !important;
-    margin-left: 80% !important;
+    margin-left: 70% !important;
     cursor: none !important;
 }
