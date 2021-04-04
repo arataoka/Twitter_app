@@ -23,7 +23,6 @@ export const userSlice = createSlice({
       state.user={uid:"", photoUrl:"", displayName:""};
     },
     updateUserProfile: (state, action:PayloadAction<USER>)=>{
-      console.log(action)
       state.user.displayName = action.payload.displayName;
       state.user.photoUrl = action.payload.photoUrl;
     }

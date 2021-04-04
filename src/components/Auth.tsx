@@ -111,7 +111,7 @@ const Auth:React.FC = ()=> {
     const signUpEmail = async () => {
         const authUser = await auth.createUserWithEmailAndPassword(email, password);
         let url = "";
-        if(avatarImage){
+        if(avatarImage) {
             const S =
                 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             const N = 16;
@@ -180,6 +180,7 @@ const Auth:React.FC = ()=> {
                                     </label>
                                 </IconButton>
                             </Box>
+                            <Box textAlign="center" className={styles.icon_text}>Set Icon Image</Box>
                         </>)}
 
                         <TextField
@@ -219,6 +220,7 @@ const Auth:React.FC = ()=> {
                             variant="contained"
                             color="primary"
                             className={classes.submit}
+                            startIcon={<EmailIcon />}
                             onClick={
                                 isLogin
                                     ? async () => {
