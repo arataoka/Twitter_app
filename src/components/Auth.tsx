@@ -1,24 +1,51 @@
-import React from 'react';
-import Avatar from '@material-ui/core/Avatar';
-import Button from '@material-ui/core/Button';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import TextField from '@material-ui/core/TextField';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Checkbox from '@material-ui/core/Checkbox';
-import Link from '@material-ui/core/Link';
-import Paper from '@material-ui/core/Paper';
-import Box from '@material-ui/core/Box';
-import Grid from '@material-ui/core/Grid';
-import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
-import Typography from '@material-ui/core/Typography';
-import { makeStyles } from '@material-ui/core/styles';
+import React, { useState } from "react";
+import { useDispatch } from "react-redux";
+import { updateUserProfile } from "../features/userSlice";
+import styles from "./Auth.module.css";
 import { auth, provider, storage } from "../firebase";
+
+import {
+    Avatar,
+    Button,
+    CssBaseline,
+    TextField,
+    Paper,
+    Grid,
+    Typography,
+    makeStyles,
+    Modal,
+    IconButton,
+    Box,
+} from "@material-ui/core";
+
+import SendIcon from "@material-ui/icons/Send";
 import CameraIcon from "@material-ui/icons/Camera";
+import EmailIcon from "@material-ui/icons/Email";
+import LockOutlinedIcon from "@material-ui/icons/LockOutlined";
+import AccountCircleIcon from "@material-ui/icons/AccountCircle";
 
+const getModalStyle=()=> {
+    const top = 50;
+    const left = 50;
 
+    return {
+        top: `${top}%`,
+        left: `${left}%`,
+        transform: `translate(-${top}%, -${left}%)`,
+    };
+}
 const useStyles = makeStyles((theme) => ({
     root: {
         height: '100vh',
+    },
+    modal: {
+        outline: "none",
+        position: "absolute",
+        width: 400,
+        borderRadius: 10,
+        backgroundColor: "white",
+        boxShadow: theme.shadows[5],
+        padding: theme.spacing(10),
     },
     image: {
         backgroundImage: 'url(https://source.unsplash.com/random)',
@@ -47,10 +74,65 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-export default function SignInSide() {
+const Auth:React.FC = ()=> {
     const classes = useStyles();
+    const dispatch = useDispatch()
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [username, setUsername] = useState("");
+    const [avatarImage, setAvatarImage] = useState<File | null>(null)
+    const [isLogin, setIsLogin] = useState(true);
+    const [openModal, setOpenModal] = useState(false);
+    const [resetEmail, setResetEmail] = useState("");
+    const onChangeImageHandler = (event: React.ChangeEvent<HTMLInputElement>) =>{
+        if(event.target.files![0]){
+            setAvatarImage(event.target.files![0]);
+            event.target.value="";
+        }
+    }
+    const sendResetEmail = async (event: React.MouseEvent<HTMLElement>) => {
+        await auth
+            .sendPasswordResetEmail(resetEmail)
+            .then(() => {
+                setOpenModal(false);
+                setResetEmail("");
+            })
+            .catch((err) => {
+                alert(err.message);
+                setResetEmail("");
+            });
+    };
     const signInGoogle = async () => {
         await auth.signInWithPopup(provider).catch((err) => alert(err.message));
+    };
+    const signInEmail = async () => {
+        await auth.signInWithEmailAndPassword(email, password);
+    };
+    const signUpEmail = async () => {
+        const authUser = await auth.createUserWithEmailAndPassword(email, password);
+        let url = "";
+        if(avatarImage){
+            const S =
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            const N = 16;
+            const randomChar = Array.from(crypto.getRandomValues(new Uint32Array(N)))
+                .map((n) => S[n % S.length])
+                .join("");
+            const fileName = randomChar + "_" + avatarImage.name;
+            // refはフォルダの階層を指定することができる。
+            await storage.ref(`avatars/${fileName}`).put(avatarImage);
+            // アップしたファイルのURLを取得できる
+            url = await storage.ref("avatars").child(fileName).getDownloadURL();
+            // データベースの情報をアップデート
+            await authUser.user?.updateProfile({
+                displayName: username,
+                photoURL:url,
+            });
+            dispatch(updateUserProfile({
+                displayName: username,
+                photoUrl:url,
+            }))
+        }
     };
 
     return (
@@ -63,9 +145,43 @@ export default function SignInSide() {
                         <LockOutlinedIcon />
                     </Avatar>
                     <Typography component="h1" variant="h5">
-                        Sign in
+                        {isLogin ? 'Login': 'Register'}
                     </Typography>
                     <form className={classes.form} noValidate>
+
+                        {!isLogin && (<>
+                            <TextField
+                                variant="outlined"
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="username"
+                                label="Username"
+                                name="username"
+                                autoComplete="username"
+                                autoFocus
+                                value={username}
+                                onChange={(event:React.ChangeEvent<HTMLInputElement>)=>{setUsername(event.target.value)}}
+                            />
+                            <Box textAlign="center">
+                                <IconButton>
+                                    <label>
+                                        <AccountCircleIcon
+                                        fontSize="large"
+                                        className={
+                                            avatarImage ? styles.login_addIconLoaded : styles.login_addIcon
+                                        }
+                                        />
+                                        <input
+                                        className={styles.login_hiddenIcon}
+                                            type="file"
+                                        onChange={onChangeImageHandler}
+                                        />
+                                    </label>
+                                </IconButton>
+                            </Box>
+                        </>)}
+
                         <TextField
                             variant="outlined"
                             margin="normal"
@@ -76,6 +192,8 @@ export default function SignInSide() {
                             name="email"
                             autoComplete="email"
                             autoFocus
+                            value={email}
+                            onChange={(event:React.ChangeEvent<HTMLInputElement>)=>{setEmail(event.target.value)}}
                         />
                         <TextField
                             variant="outlined"
@@ -87,17 +205,44 @@ export default function SignInSide() {
                             type="password"
                             id="password"
                             autoComplete="current-password"
+                            value={password}
+                            onChange={(event:React.ChangeEvent<HTMLInputElement>)=>{setPassword(event.target.value)}}
                         />
 
                         <Button
-                            type="submit"
+                            disabled={
+                                isLogin
+                                ? !email || password.length < 6
+                                    : !username || !email || password.length<6 || !avatarImage
+                            }
                             fullWidth
                             variant="contained"
                             color="primary"
                             className={classes.submit}
+                            onClick={
+                                isLogin
+                                    ? async () => {
+                                        try {
+                                            await signInEmail();
+                                        } catch (err) {
+                                            alert(err.message);
+                                        }
+                                    }
+                                    : async () => {
+                                        try {
+                                            await signUpEmail();
+                                        } catch (err) {
+                                            alert(err.message);
+                                        }
+                                    }
+                            }
                         >
-                            Sign In
+                            {isLogin ? 'Login': 'Register'}
                         </Button>
+                        <Grid container>
+                            <Grid item xs><span className={styles.login_reset} onClick={()=>{setOpenModal(true)}}>Forgot password?</span></Grid>
+                            <Grid item><span className={styles.login_toggleMode} onClick={()=>{setIsLogin(!isLogin)}}>{isLogin ? "Create new account ?": "Back to Login?"}</span></Grid>
+                        </Grid>
                         <Button
                             fullWidth
                             variant="contained"
@@ -109,8 +254,31 @@ export default function SignInSide() {
                             SignIn with Google
                         </Button>
                     </form>
+                    <Modal open={openModal} onClose={() => setOpenModal(false)}>
+                        <div style={getModalStyle()} className={classes.modal}>
+                            <div className={styles.login_modal}>
+                                <TextField
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                    type="email"
+                                    name="email"
+                                    label="Reset E-mail"
+                                    value={resetEmail}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                        setResetEmail(e.target.value);
+                                    }}
+                                />
+                                <IconButton onClick={sendResetEmail}>
+                                    <SendIcon />
+                                </IconButton>
+                            </div>
+                        </div>
+                    </Modal>
                 </div>
             </Grid>
         </Grid>
     );
 }
+
+export default Auth;
