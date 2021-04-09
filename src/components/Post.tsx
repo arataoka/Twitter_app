@@ -70,7 +70,7 @@ const [comment, setComment] = useState("");
         return () => {
             unSub();
         };
-    }, [props.postId]);
+    }, []);
 
     const newComment = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();

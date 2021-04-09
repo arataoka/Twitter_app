@@ -77,8 +77,8 @@ const useStyles = makeStyles((theme) => ({
 const Auth:React.FC = ()=> {
     const classes = useStyles();
     const dispatch = useDispatch()
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [email, setEmail] = useState("test@sample.com");
+    const [password, setPassword] = useState("123456");
     const [username, setUsername] = useState("");
     const [avatarImage, setAvatarImage] = useState<File | null>(null)
     const [isLogin, setIsLogin] = useState(true);
